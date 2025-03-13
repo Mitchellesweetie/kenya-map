@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kenya Map Only</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@latest/ol.css">
+    <script src="https://cdn.jsdelivr.net/npm/ol@latest/dist/ol.js"></script>
+    <style>
+        #map {
+            width: 100%;
+            height: 500px;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: white;
+            padding: 5px;
+            border: 1px solid #ccc;
+            pointer-events: none;
+            font-size: 12px;
+            display: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <h2>Kenya Only Map</h2>
+    <div id="map" style="height: 800px; width: auto;"></div>
+    <div id="tooltip" class="tooltip"></div>
+    <div class="card" style="width: 10rem;">
+        <div class="card-body">
+          <h5 class="card-title" style="font-size: 20px; color: red;">Select County</h5>
+          <h6 class="card-subtitle mb-2 text-body-secondary" style="font-size: 20px; color: green;">Select Municiple</h6>
+          <p class="card-text">county-code</p>
+          <p class="card-text">countituency:</p>
+          <p class="card-text">shape area:</p>
+
+
+         
+        </div>
+      </div>
+    <script>
+        var map = new ol.Map({
+            target: 'map',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM() // Base layer
+                })
+            ],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([37.9062, -1.2921]), // Centered at Nairobi
+                zoom: 5.7
+            })
+        });
+
+        // Load Kenya Boundary
+        var kenyaLayer = new ol.layer.Vector({
+            source: new ol.source.Vector({
+                url: '/kenya.geojson', // Ensure this is the correct path to the Kenya GeoJSON file
+                format: new ol.format.GeoJSON()
+            }),
+            style: new ol.style.Style({
+                stroke: new ol.style.Stroke({ color: 'grey', width: 1 }),
+                fill: new ol.style.Fill({ color: 'rgba(255, 0, 0, 0.1)' })
+            })
+        });
+
+        map.addLayer(kenyaLayer);
+
+        // Create tooltip
+        var tooltip = document.getElementById('tooltip');
+
+        // Hover interaction
+        var hoverInteraction = new ol.interaction.Select({
+            condition: ol.events.condition.pointerMove,
+            layers: [kenyaLayer], // Only select features from the kenyaLayer
+            style: new ol.style.Style({
+                stroke: new ol.style.Stroke({ color: 'red', width: 1 }),
+                fill: new ol.style.Fill({ color: 'red' })
+            })
+        });
+        
+        map.addInteraction(hoverInteraction);
+
+        // Event listener for hover
+        hoverInteraction.on('select', function (e) {
+            var feature = e.selected[0]; // Get the hovered feature
+
+            if (feature) {
+                // Get properties from the feature (using the actual GeoJSON property names)
+                var countyName = feature.get('COUNTY_NAM');  // County name
+                var countyCode = feature.get('COUNTY_COD');  // County code
+                var constituencyName = feature.get('CONSTITUEN');  // Constituency name
+                var shapeArea = feature.get('Shape_Area');  // Shape Area (as an example)
+
+                // Display tooltip with the county name and additional information
+                tooltip.innerHTML = 
+                    '<strong>' + countyName + '</strong><br>' + 
+                    'County Code: ' + countyCode + '<br>' + 
+                    'Constituency: ' + constituencyName + '<br>' + 
+                    'Shape Area: ' + shapeArea + ' sq.km';  // Add more info as needed
+                tooltip.style.display = 'block';
+
+                // Position the tooltip near the mouse pointer
+                var coordinates = e.mapBrowserEvent.coordinate;
+                var pixel = map.getPixelFromCoordinate(coordinates);
+                tooltip.style.left = pixel[0] + 'px';
+                tooltip.style.top = pixel[1] + 'px';
+            } else {
+                tooltip.style.display = 'none'; // Hide tooltip if no feature is hovered
+            }
+        });
+    </script>
+</body>
+</html>
